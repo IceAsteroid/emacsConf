@@ -2,15 +2,6 @@
 #+property: header-args :tangle init.el
 #+auto_tangle: t
 
-Font test: 1 2 3 4 5 6 7
-  2 3 4 5 6 7 ;indentation test
-#+begin_src emacs-lisp :tangle off
- 2 3 4 5 6 7
-#+end_src
-
-Test visual auto-fill
-ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-
 * Proxy
 #+begin_src emacs-lisp :tangle yes
   ;; Proxy settings
@@ -47,6 +38,19 @@ ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
 
 * elpaca.el: A better replcaement to straight.el from package.el
 #+begin_src emacs-lisp
+  ;;;; Prevent package.el to load packages prior to their
+  ;;;;-init-file loading at startup in favor of elpaca.el
+  (setq package-enable-at-startup nil)
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package package
+    :defer t
+    :after elpaca
+  )
+#+end_src
+
+#+begin_src emacs-lisp :tangle yes
   ;; elpaca.el setup
   ;;; Boostrap elpaca
   (defvar elpaca-installer-version 0.6)
@@ -93,14 +97,13 @@ ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
     (setq elpaca-use-package-by-default t))
   ;;;;;; Necessary to use the `:elpaca' use-package keyword at the top-level.
   (elpaca-wait)
-
   ;;;; Prevent package.el to load packages prior to their
   ;;;;-init-file loading at startup in favor of elpaca.el
   (setq package-enable-at-startup nil)
 #+end_src
 
 * god.el: Get into God modal mode
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle off
   (use-package god-mode
     :ensure t
     :init
@@ -186,11 +189,10 @@ Define single command to switch a specific theme
 * centered-cursor-mode.el: Keep current line at center
 #+begin_src emacs-lisp
   (use-package centered-cursor-mode
-    :demand
+    :ensure t
     :config
     ;; Optional, enables centered-cursor-mode in all buffers.
-    ;;(global-centered-cursor-mode)
-
+    (global-centered-cursor-mode 1)
     ;; disable in terminal modes
     ;; http://stackoverflow.com/a/6849467/519736
     ;; also disable in Info mode, because it breaks going back with the backspace key
@@ -199,7 +201,39 @@ Define single command to switch a specific theme
 	(when (not (memq major-mode
 			 (list 'Info-mode 'term-mode 'eshell-mode 'shell-mode 'erc-mode)))
 	  (centered-cursor-mode))))
-    (my-global-centered-cursor-mode 1))
+    ;;(my-global-centered-cursor-mode 1)
+    )
+#+end_src
+
+* ace-window.el: A better window management
+#+begin_src emacs-lisp
+(use-package ace-window
+  :ensure t
+  :init
+  (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l))
+  ;; activated to wait an action even when only one window opened
+  ;;(setq aw-dispatch-always t)
+  ;; display the status of ace-window in echo area when activated
+  (setq aw-minibuffer-flag t)
+  ;; default keybindings for ace-window actions
+  (defvar aw-dispatch-alist
+    '((?x aw-delete-window "Delete Window")
+      (?m aw-swap-window "Swap Windows")
+      (?M aw-move-window "Move Window")
+      (?c aw-copy-window "Copy Window")
+      (?j aw-switch-buffer-in-window "Select Buffer")
+      (?n aw-flip-window)
+      (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
+      (?c aw-split-window-fair "Split Fair Window")
+      (?v aw-split-window-vert "Split Vert Window")
+      (?b aw-split-window-horz "Split Horz Window")
+      (?o delete-other-windows "Delete Other Windows")
+      (?? aw-show-dispatch-help))
+    "List of actions for `aw-dispatch-default'.")
+  :config
+  (set-face-attribute 'aw-leading-char-face nil :height 2.0)
+  (global-set-key (kbd "M-o") 'ace-window)
+  )
 #+end_src
 
 * linum-relative.el: Not in use, unmaintained
@@ -213,8 +247,8 @@ Define single command to switch a specific theme
     (global-linum-mode 1))
 #+end_src
 
-* perfect-margin.el: Auto-adjust margin to keep content in center; Not in use, buggy
-#+begin_src emacs-lisp :tangle off
+* perfect-margin.el: Auto-adjust margin to keep content in center
+#+begin_src emacs-lisp :tangle yes
   ;; perfect-margin.el
   (use-package perfect-margin
     :ensure t
@@ -228,8 +262,7 @@ Define single command to switch a specific theme
     (defcustom perfect-margin-ignore-filters
       '(window-minibuffer-p)
       "List of functions to determine if window is ignored.
-       Each function is called with window as its sole arguemnt,
-       returning a non-nil value indicate to ignore the window."
+       Each function is called with window as its sole        returning a non-nil value indicate to ignore the window."
       :group 'perfect-margin)
     :custom
     (perfect-margin-visible-width 128)
@@ -249,8 +282,39 @@ Define single command to switch a specific theme
 	(global-set-key (kbd (concat margin "<" multiple "wheel-down>")) 'mwheel-scroll))))
 #+end_src
 
-* all-the-icons.el
+* zoom.el: Set sizes for different windows
+#+begin_src emacs-lisp :tangle off
+  (use-package zoom
+    :ensure t
+    :init
+    (zoom-mode t))
+#+end_src
+
+* popwin.el: Trivial window manager
 #+begin_src emacs-lisp
+  (use-package popwin
+    :ensure t
+    :init
+    (popwin-mode 1)
+    :config
+    (push '("*hs-lint*" :stick t) popwin:special-display-config)
+    (push '("*EGLOT.*" :regexp t) popwin:special-display-config)
+    (push '("*xref*" :stick t) popwin:special-display-config)
+    (push '("*Buffer List*" :stick t) popwin:special-display-config)
+    (push '("*HS-Error*" :stick t :noselect t) popwin:special-display-config)
+    )
+#+end_src
+
+* olivetti.el: Anotehr package to center content
+#+begin_src emacs-lisp :tangle off
+(use-package olivetti
+  :ensure t
+  :init
+  (olivetti-mode 1))
+#+end_src
+
+* all-the-icons.el
+#+begin_src emacs-lisp :tangle yes
   ;; all-the-icons.el
   (use-package all-the-icons
     :ensure t
@@ -258,7 +322,7 @@ Define single command to switch a specific theme
 #+end_src
 
 * treemacs.el: Multi-purpose sidebar
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle yes
   (use-package treemacs
     :ensure t
     :hook
@@ -324,7 +388,7 @@ Define single command to switch a specific theme
       ;; using a Hi-DPI display, uncomment this to double the icon size.
       ;;(treemacs-resize-icons 44)
       ;;(treemacs-follow-mode t)
-      (treemacs-tag-follow-mode t)
+      ;;(treemacs-tag-follow-mode t)
       (treemacs-filewatch-mode t)
       (treemacs-fringe-indicator-mode 'always)
       (when treemacs-python-executable
@@ -355,23 +419,41 @@ Define single command to switch a specific theme
   ;;;(use-package treemacs-projectile
   ;;;  :after (treemacs projectile)
   ;;;  :ensure t)
+#+end_src
+
+#+begin_src emacs-lisp
   (use-package treemacs-all-the-icons
     :ensure t)
+#+end_src
+
+#+begin_src emacs-lisp
   (use-package treemacs-icons-dired
     :hook (dired-mode . treemacs-icons-dired-enable-once)
     :ensure t)
-      ;;;(use-package treemacs-magit
-      ;;;  :after (treemacs magit)
-      ;;;  :ensure t)
-      ;;;(use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
-      ;;;  :after (treemacs persp-mode) ;;or perspective vs. persp-mode
-      ;;;  :ensure t
-      ;;;  :config (treemacs-set-scope-type 'Perspectives))
-      ;;;(use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
-      ;;;  :after (treemacs)
-      ;;;  :ensure t
-      ;;;  :config (treemacs-set-scope-type 'Tabs))
+#+end_src
 
+#+begin_src emacs-lisp
+  ;;;(use-package treemacs-magit
+  ;;;  :after (treemacs magit)
+  ;;;  :ensure t)
+  ;;;(use-package treemacs-persp ;;treemacs-perspective if you use perspective.el vs. persp-mode
+  ;;;  :after (treemacs persp-mode) ;;or perspective vs. persp-mode
+  ;;;  :ensure t
+  ;;;  :config (treemacs-set-scope-type 'Perspectives))
+  ;;;(use-package treemacs-tab-bar ;;treemacs-tab-bar if you use tab-bar-mode
+  ;;;  :after (treemacs)
+  ;;;  :ensure t
+  ;;;  :config (treemacs-set-scope-type 'Tabs))
+#+end_src
+
+#+begin_src emacs-lisp :tangle off
+  (use-package treemacs
+    :ensure t)
+#+end_src
+#+begin_src emacs-lisp :tangle off
+  (use-package treemacs-all-the-icons
+    :ensure t
+    )
 #+end_src
 
 * vertico.el: A better completion minibuffer
@@ -379,7 +461,7 @@ Define single command to switch a specific theme
   ;; Install & enable vertico
   (use-package vertico
     :init
-    (vertico-mode)
+    (vertico-mode 1)
     ;; Different scroll margin
     ;;;;(setq vertico-scroll-margin 0)
     ;; Show more candidates
@@ -388,6 +470,9 @@ Define single command to switch a specific theme
     ;;(setq vertico-resize t)
     ;; Optionally enable cycling for `vertico-next' and `vertico-previous'.
     (setq vertico-cycle t)
+    :config
+    (custom-set-faces '(vertico-indexed ((t (:height 1.0)))))
+    (vertico-indexed-mode 1)
     )
   ;; Persist history over Emacs restarts. Vertico sorts by history position.
   (setq history-length 25)
@@ -402,8 +487,13 @@ Define single command to switch a specific theme
     ;; Configure a custom style dispatcher (see the Consult wiki)
     ;; (setq orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch)
     ;;       orderless-component-separator #'orderless-escapable-split-on-space)
-    (setq completion-styles '(orderless basic)
-	  completion-category-overrides '((file (styles basic partial-completion)))))
+    ;;(setq completion-styles '(orderless partial-completion basic)
+    ;;completion-category-overrides '((file (styles basic partial-completion))))
+    ;; For lsp-mode completion
+    (setq completion-styles '(orderless partial-completion basic)
+	  completion-category-defaults nil
+	  completion-category-overrides nil)
+    )
 #+end_src
 
 * marginalia.el: Rich annotations for minibuffer candidates
@@ -426,17 +516,16 @@ Define single command to switch a specific theme
 #+end_src
 
 * embark.el: Provides actions on targets in minibuffers/buffers
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle yes
   (use-package embark
     :ensure t
-
     :bind
     (("C-." . embark-act)         ;; pick some comfortable binding
      ("C-;" . embark-dwim)        ;; good alternative: M-.
+     ;;("C-SPC" . embark-select)    ;; select more than one candidate
      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
-
     :init
-
+    (setq embark-indicators '(embark-minimal-indicator embark-highlight-indicator embark-isearch-highlight-indicator))
     ;; Optionally replace the key help with a completing-read interface
     (setq prefix-help-command #'embark-prefix-help-command)
 
@@ -444,29 +533,37 @@ Define single command to switch a specific theme
     ;; strategy, if you want to see the documentation from multiple providers.
     (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
     ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
-
+    (add-hook 'minibuffer-mode-hook (lambda ()
+				      (keymap-local-set "C-SPC" 'embark-select)))
     :config
-
     ;; Hide the mode line of the Embark live/completions buffers
     (add-to-list 'display-buffer-alist
 		 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
 		   nil
 		   (window-parameters (mode-line-format . none)))))
 #+end_src
+
 * corfu.el: In buffer popup for text/code completion
 #+begin_src emacs-lisp
   ;; Install & Configure corfu.el,
   ;;-An in buffer popup for text/code completion
   (use-package corfu
+    :ensure t
     :custom
     ;; (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
     ;; (corfu-preselect 'prompt)         ;; Always preselect the prompt
     ;; (corfu-auto t)                 ;; Enable auto completion
     (corfu-cycle t)           ;; Enable for Tab to scroll
     (corfu-preselect 'prompt) ;; Enable for Tab to scroll
+    (corfu-echo-documentation 0.25)
+    (setq-local corfu-auto        t
+		;;corfu-auto-delay  0 ;; TOO SMALL - NOT RECOMMENDED
+		corfu-auto-delay  1 ;; TOO SMALL - NOT RECOMMENDED
+		corfu-auto-prefix 1 ;; TOO SMALL - NOT RECOMMENDED
+		completion-styles '(orderless partial-completion basic))
+    (corfu-separator ?\s)          ;; Orderless field separator
     (corfu-auto t
 		corfu-quit-no-match 'separator) ;; Enable auto completion
-    ;; (corfu-separator ?\s)          ;; Orderless field separator
     ;; (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
     ;; (corfu-quit-no-match nil)      ;; Never quit, even if there is no match
     ;; (corfu-preview-current nil)    ;; Disable current candidate preview
@@ -490,9 +587,11 @@ Define single command to switch a specific theme
 	  ("S-TAB" . corfu-previous)
 	  ([backtab] . corfu-previous))
     :init
+    (global-corfu-mode 1)
+    (corfu-history-mode 1)
+    (corfu-popupinfo-mode 1)
     :config
-    (global-corfu-mode)
-    (corfu-history-mode))
+    )
 #+end_src
 
 ** Tweak built-in completion Dabbrev.el to be used with corful
@@ -502,7 +601,12 @@ Define single command to switch a specific theme
     :elpaca nil  ;;Turn off elpaca, since dabbrev is built-in
     :bind
     ;; Swap M-/ and C-M-/
-    (("C-<tab>" . dabbrev-completion)
+    (
+     ;;("C-<tab>" . dabbrev-completion)
+     ;; Dabbrev is for current buffer-scope candidates
+     ("C-<tab>" . dabbrev-completion)
+     ;; Additional candidates
+     ("M-<tab>" . completion-at-point)
      ;;("M-/" . dabbrev-expand)
      )
     :custom
@@ -528,6 +632,72 @@ Define single command to switch a specific theme
   (advice-add #'corfu-insert :after #'corfu-send-shell)
 #+end_src
 
+* cape.el: Extensions to corfu
+#+begin_src emacs-lisp
+  ;; Add extensions to corfu
+  (use-package cape
+    ;; Bind dedicated completion commands
+    ;; Alternative prefix keys: C-c p, M-p, M-+, ...
+    :bind (("C-c p p" . completion-at-point) ;; capf
+	   ("C-c p t" . complete-tag)        ;; etags
+	   ("C-c p d" . cape-dabbrev)        ;; or dabbrev-completion
+	   ("C-c p h" . cape-history)
+	   ("C-c p f" . cape-file)
+	   ("C-c p k" . cape-keyword)
+	   ("C-c p s" . cape-elisp-symbol)
+	   ("C-c p e" . cape-elisp-block)
+	   ("C-c p a" . cape-abbrev)
+	   ("C-c p l" . cape-line)
+	   ("C-c p w" . cape-dict)
+	   ("C-c p :" . cape-emoji)
+	   ("C-c p \\" . cape-tex)
+	   ("C-c p _" . cape-tex)
+	   ("C-c p ^" . cape-tex)
+	   ("C-c p &" . cape-sgml)
+	   ("C-c p r" . cape-rfc1345))
+    :init
+    ;; Add to the global default value of `completion-at-point-functions' which is
+    ;; used by `completion-at-point'.  The order of the functions matters, the
+    ;; first function returning a result wins.  Note that the list of buffer-local
+    ;; completion functions takes precedence over the global list.
+    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+    (add-to-list 'completion-at-point-functions #'cape-file)
+    (add-to-list 'completion-at-point-functions #'cape-elisp-block)
+    ;;(add-to-list 'completion-at-point-functions #'cape-history)
+    ;;(add-to-list 'completion-at-point-functions #'cape-keyword)
+    ;;(add-to-list 'completion-at-point-functions #'cape-tex)
+    ;;(add-to-list 'completion-at-point-functions #'cape-sgml)
+    ;;(add-to-list 'completion-at-point-functions #'cape-rfc1345)
+    ;;(add-to-list 'completion-at-point-functions #'cape-abbrev)
+    ;;(add-to-list 'completion-at-point-functions #'cape-dict)
+    ;;(add-to-list 'completion-at-point-functions #'cape-elisp-symbol)
+    ;;(add-to-list 'completion-at-point-functions #'cape-line)
+
+    (setq-local completion-at-point-functions
+		(list (cape-capf-buster #'some-caching-capf)))
+    )
+#+end_src
+
+* consult.el: Additonal enhancement functions to search & find
+#+begin_src emacs-lisp
+  ;; consult.el
+  (use-package consult
+    :ensure t
+    :bind
+    ("C-x f" . consult-recent-file)
+    ("M-g g" . consult-goto-line)
+    )
+#+end_src
+
+** embark-consult.el: embark actions for completions of consult functions
+#+begin_src emacs-lisp
+  ;; embark-consult.el
+  (use-package embark-consult
+    :ensure t ; only need to install it, embark loads it after consult if found
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+#+end_src
+
 * Testing section
 ** Mixed variable & fixed Fonts in Org-mode
 #+begin_src emacs-lisp :tangle yes
@@ -537,7 +707,7 @@ Define single command to switch a specific theme
   (defun addtextproperties ()
     (interactive)
     (add-text-properties (point-min) (point-max)
-			'(line-spacing -0.3)))
+			 '(line-spacing -0.3)))
   ;;(set-frame-font "Dosis-v2031b-13" nil t)
   ;;(set-face-font 'fixed-pitch-serif "JetBrainsMono Nerd Font")
   ;;(set-face-font 'variable-pitch "Liberation Sans")
@@ -555,26 +725,27 @@ Define single command to switch a specific theme
   ;;-(custom-theme-set-faces), since faces set by (set-face-attribute)
   ;;-sometimes got overriden by other inner changes of Emacs, such as activated pacakges.
   (custom-theme-set-faces
-    'user
-      ;;'(default ((t (:font "Dosis-v2031b-13"))))
-      '(default ((t (:font "JetBrainsMono Nerd Font-12"))))
-      '(line-number ((t (:family "JetBrainsMono Nerd Font" :height 0.8 :slant normal))))
-      '(line-number-current-line ((t (:family "JetBrainsMono Nerd Font" :height 0.8 :slant normal))))
-      '(fixed-pitch ((t (:font "JetBrainsMono Nerd Font-11"))))
-      ;;'(variable-pitch ((t (:font "Dosis-v2031b-13"))))
-      ;;'(variable-pitch ((t (:font "Linux Libertine G-15"))))
-      '(variable-pitch ((t (:font "Dosis-v2031b-14"))))
-      ;;'(org-document-title ((t (:inherit outline-1 :height 2.0 :underline t :family "Linux Libertine Display G"))))
-      '(org-document-title ((t (:height 2.0 :underline t :family "Linux Libertine Display G"))))
-      ;;(org-level-1 ((t (:inherit outline-1 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-2 ((t (:inherit outline-2 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-3 ((t (:inherit outline-3 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-4 ((t (:inherit outline-4 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-5 ((t (:inherit outline-5 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-6 ((t (:inherit outline-6 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-7 ((t (:inherit outline-7 :height 1.0 :family "Linux Libertine G"))))
-      ;;(org-level-8 ((t (:inherit outline-8 :height 1.0 :family "Linux Libertine G"))))
-  )
+   'user
+   ;;'(default ((t (:font "Dosis-v2031b-13"))))
+   ;;'(variable-pitch ((t (:font "Linux Libertine G-15"))))
+   ;;'(org-document-title ((t (:inherit outline-1 :height 2.0 :underline t :family "Linux Libertine Display G"))))
+   ;;'(line-number ((t (:family "JetBrainsMono Nerd Font" :height 0.8 :weight bold  :slant normal))))
+   ;;'(line-number-current-line ((t (:family "JetBrainsMono Nerd Font" :height 0.8 :weight bold :slant normal))))
+   '(default ((t (:font "JetBrainsMono Nerd Font-12"))))
+   '(fixed-pitch ((t (:font "JetBrainsMono Nerd Font-11"))))
+   '(variable-pitch ((t (:font "Dosis-v2031b-14"))))
+   '(line-number ((t (:inherit fixed-pitch :height 1.0 :slant normal))))
+   '(line-number-current-line ((t (:inherit fixed-pitch :height 1.0 :slant normal))))
+   '(org-document-title ((t (:height 2.0 :underline t :family "Linux Libertine Display G"))))
+   ;;(org-level-1 ((t (:inherit outline-1 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-2 ((t (:inherit outline-2 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-3 ((t (:inherit outline-3 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-4 ((t (:inherit outline-4 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-5 ((t (:inherit outline-5 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-6 ((t (:inherit outline-6 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-7 ((t (:inherit outline-7 :height 1.0 :family "Linux Libertine G"))))
+   ;;(org-level-8 ((t (:inherit outline-8 :height 1.0 :family "Linux Libertine G"))))
+   )
   (add-hook 'org-mode-hook 'variable-pitch-mode)
   ;;(add-hook 'minibuffer-mode-hook (lambda () (set-frame-font "Dosis-v2031b-13" nil t)))
 
@@ -586,48 +757,45 @@ Define single command to switch a specific theme
   ;;;(custom-theme-set-faces
   ;;;'user
   (custom-set-faces
-  '(org-block ((t (:inherit fixed-pitch))))
-  '(org-code ((t (:inherit (shadow fixed-pitch)))))
-  ;;'(org-document-info ((t (:foreground "dark orange"))))
-  '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
-  '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
-  ;;'(org-link ((t (:foreground "royal blue" :underline t))))
-  '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-  '(org-property-value ((t (:inherit fixed-pitch))) t)
-  '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-  ;;'(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
-  '(org-table ((t (:inherit fixed-pitch))))
-  '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
-  '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
-#+end_src
-
-#+begin_src emacs-lisp :tangle off
-1 23 4 5 7 8 9 10
+   '(org-block ((t (:inherit fixed-pitch))))
+   '(org-code ((t (:inherit (shadow fixed-pitch)))))
+   ;;'(org-document-info ((t (:foreground "dark orange"))))
+   '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
+   '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
+   ;;'(org-link ((t (:foreground "royal blue" :underline t))))
+   '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   '(org-property-value ((t (:inherit fixed-pitch))) t)
+   '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   ;;'(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
+   '(org-table ((t (:inherit fixed-pitch))))
+   '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+   '(org-verbatim ((t (:inherit (shadow fixed-pitch))))))
 #+end_src
 
 ** Reduce line-spacing beyond limitation. Not solved
 #+begin_src emacs-lisp :tangle off
-;; Set the padding between lines
-(defvar line-padding 0.5)
-(defun add-line-padding ()
-  "Add extra padding between lines"
-  ; remove padding overlays if they already exist
-  (let ((overlays (overlays-at (point-min))))
-    (while overlays
-      (let ((overlay (car overlays)))
-        (if (overlay-get overlay 'is-padding-overlay)
-            (delete-overlay overlay)))
-      (setq overlays (cdr overlays))))
-  ; add a new padding overlay
-  (let ((padding-overlay (make-overlay (point-min) (point-max))))
-    (overlay-put padding-overlay 'is-padding-overlay t)
-    (overlay-put padding-overlay 'line-spacing (* .1 line-padding))
-    (overlay-put padding-overlay 'line-height (+ 1 (* .1 line-padding))))
-  (setq mark-active nil))
-(add-hook 'buffer-list-update-hook 'add-line-padding)
+  ;; Set the padding between lines
+  (defvar line-padding 0.5)
+  (defun add-line-padding ()
+    "Add extra padding between lines"
+					  ; remove padding overlays if they already exist
+    (let ((overlays (overlays-at (point-min))))
+      (while overlays
+	(let ((overlay (car overlays)))
+	  (if (overlay-get overlay 'is-padding-overlay)
+	      (delete-overlay overlay)))
+	(setq overlays (cdr overlays))))
+					  ; add a new padding overlay
+    (let ((padding-overlay (make-overlay (point-min) (point-max))))
+      (overlay-put padding-overlay 'is-padding-overlay t)
+      (overlay-put padding-overlay 'line-spacing (* .1 line-padding))
+      (overlay-put padding-overlay 'line-height (+ 1 (* .1 line-padding))))
+    (setq mark-active nil))
+  (add-hook 'buffer-list-update-hook 'add-line-padding)
 #+end_src
 
 * Org-mode related configs
+** org-mode
 #+begin_src emacs-lisp
   ;; Org-mode
   (use-package org
@@ -651,18 +819,19 @@ Define single command to switch a specific theme
     ;;(add-to-list 'org-structure-template-alist '("P" . "src jupyter-python :session py :display plain \n"))
     ;;(set-face-underline 'outline-ellipsis t)
     )
-    #+end_src
+#+end_src
 
-** org-label-load-languages.el: Built-in in  org
+** org-label-load-languages.el: Built-in in org
 #+begin_src emacs-lisp
   (setq org-confirm-babel-evaluate nil)
   (org-babel-do-load-languages 'org-babel-load-languages
-   '(
-       (shell . t)
-       (haskell . t)
-       (python . t)
-       (perl . t)
-   ))
+			       '(
+				 (emacs-lisp . t)
+				 (shell . t)
+				 (haskell . t)
+				 (python . t)
+				 (perl . t)
+				 ))
 #+end_src
 
 ** org-auto-tangle.el
@@ -691,28 +860,27 @@ Define single command to switch a specific theme
     (setq org-indent-mode-turns-on-hiding-stars nil)
     ;;(setq org-superstar-leading-bullet 11044)
     (setq org-superstar-headline-bullets-list '(19968 20108 19977 22235 20116 20845 19971 20843 20061 8553 8554 8555))
-    (setq org-superstar-remove-leading-stars t))
-#+end_src
-
-Testing purpses
-#+begin_src emacs-lisp :tangle off
-   (setq org-hide-leading-stars t)
+    (setq org-superstar-remove-leading-stars t)
+    :config
+    ;;(custom-set-faces '(org-superstar-header-bullet ((t (:inherit fixed-pitch))))
+    ;;'(org-superstar-leading ((t (:inherit fixed-pitch)))))
+    )
 #+end_src
 
 ** mixed-pitch.el: Preset for variable-pitch & fixed-pitch. Not well-documented. Not in use, have self-defined similar feature
 #+begin_src emacs-lisp :tangle off
   (use-package mixed-pitch
-  :ensure t
-  :init
+    :ensure t
+    :init
     :hook
     ;; If you want it in all text modes:
     (text-mode . mixed-pitch-mode)
-  :config)
+    :config)
   ;;(set-face-attribute 'variable-pitch t :family "Droid Serif")
 #+end_src
 
 ** org-variable-pitch.el: Not well-explained, can't figure out. Not in use
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle off
   ;;Stupid documentation worse than nothing, literaly can't make it work.
 #+end_src
 
@@ -726,20 +894,20 @@ Testing purpses
     :hook (org-mode . org-sticky-header-mode))
 #+end_src
 
-** Change outline ellipsis overridng org-ellipsis
+** Change outline ellipsis to override org-ellipsis
 #+begin_src emacs-lisp :tangle yes
   (set-display-table-slot standard-display-table 
-  			   'selective-display 
-  			   (string-to-vector "⤵"))
+			  'selective-display 
+			  (string-to-vector "⤵"))
 #+end_src
 
 ** org-sidebar.el: A sidebar displaying relevant features including an org-sidebar-tree for org-mode
-#+begin_src emacs-lisp :tangle yes
+#+begin_src emacs-lisp :tangle off
   (use-package org-sidebar
-    :ensure t
+    ;;:ensure t
     :init
     (setq outline-minor-mode-cycle t)
-  )
+    )
 #+end_src
 
 ** org-side-tree: A sidebar specific to display/navigate org-headings
@@ -747,9 +915,13 @@ Testing purpses
   (use-package org-side-tree
     :ensure t
     :init
+    (setq org-side-tree-width 40)
     ;;(setq org-hide-leading-stars t)
     ;;(add-hook 'org-side-tree-mode-hook (lambda () (setq-local org-hide-leading-stars t)))
     (setq outline-minor-mode-cycle t)
+    (setq org-side-tree-display-side 'right)
+    ;;Prevent org-side-tree window from being closed by C-x 1
+    (setq org-side-tree-no-delete-other-windows t)
     ;;(setq org-side-tree-enable-folding t)
     ;;(setq org-side-tree-fontify t)
     ;;(setq org-side-tree-persistent nil)
@@ -757,90 +929,206 @@ Testing purpses
     ;;(setq truncate-lines t)
     ;;(setq truncate-partial-width-windows t)
     ;;(setq org-hide-leading-stars t)
+    :config
     (add-hook 'org-side-tree-mode-hook (lambda () (visual-line-mode -1)))
     ;;(add-hook 'org-side-tree-mode-hook (lambda () (setq org-hide-leading-stars nil)))
     ;;(add-hook 'org-side-tree-mode-hook (lambda () (outline-mode -1)))
     (add-hook 'org-side-tree-mode-hook (lambda () (display-line-numbers-mode -1)))
-    ;;(add-hook 'org-side-tree-mode-hook 'org-mode)
-    :config
-  )
-    ;;(defadvice org-side-tree (before run-org-side-tree activate)
-    ;;  "Run `before-org-side-tree-hook'."
-    ;;  (run-hooks 'before-org-side-tree-hook))
-    ;;(defadvice org-side-tree (after run-org-side-tree activate)
-    ;;  "Run `after-org-side-tree-hook'."
-    ;;  (run-hooks 'before-org-side-tree-hook))
-    ;;(add-hook 'after-org-side-tree-hook (lambda () (setq-local org-hide-leading-stars t)))
-    ;;;;(add-hook 'after-org-side-tree-hook (lambda () (org-indent-mode -1)))
-    ;;(add-hook 'after-org-side-tree-hook (lambda () (setq-local truncate-lines t)
-    ;;						    (setq-local  truncate-partial-width-windows t)
-    ;;						    (toggle-truncate-lines 1)))
-    ;;(add-hook 'org-side-tree-mode-hook (lambda () (setq-local org-hide-leading-stars t)))
-    ;;(add-hook 'org-side-tree-mode-hook (lambda () (toggle-truncate-lines 1)))
-    ;;(add-hook 'org-side-tree-mode-hook 'toggle-truncate-lines)
-    ;;(add-hook 'org-side-tree-mode-hook
-    ;;	  (lambda ()
-    ;;	    (setq truncate-lines t)
-    ;;	    (setq truncate-partial-width-windows t)))
+    ;;(add-hook 'org-mode-hook 'org-side-tree)
+    ;;(add-hook 'org-mode-hook (lambda () (local-set-key (kbd "C-c t") 'org-side-tree-toggle)))
+    ;;(add-hook 'org-side-tree-mode-hook (lambda () (local-set-key (kbd "C-c t") 'org-side-tree-toggle)))
+    )
+  (add-hook 'org-side-tree-mode-hook 'variable-pitch-mode)
 #+end_src
 
-** Heading demo 2
-*** Heading demo 3
-**** Heading demo 4
-***** Heading demo 5
-****** Heading demo 6
-******* Heading demo 7
-******** Heading demo 8
-********* Heading demo 9
-********** Heading demo 10
-*********** Heading demo 11
-************ Heading demo 12
+* Programming configurations
+** Configure lsp-mode to be used with corfu
+#+begin_src emacs-lisp :tangle off
+  (use-package lsp-mode
+    :custom
+    (lsp-completion-provider :none) ;; we use Corfu!
+    :init
+    (defun my/orderless-dispatch-flex-first (_pattern index _total)
+      (and (eq index 0) 'orderless-flex))
+    (defun my/lsp-mode-setup-completion ()
+      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+	    '(orderless)))
+    ;; Optionally configure the first word as flex filtered.
+    (add-hook 'orderless-style-dispatchers #'my/orderless-dispatch-flex-first nil 'local)
+    ;; Optionally configure the cape-capf-buster.
+    (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point)))
+    :hook
+    (haskell . lsp)
+    (lsp-completion-mode . my/lsp-mode-setup-completion))
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-buster)
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+#+end_src
+
+with flex
+#+begin_src emacs-lisp :tangle off
+  (use-package lsp-mode
+    :custom
+    (lsp-completion-provider :none) ;; we use Corfu!
+    :init
+    (defun my/lsp-mode-setup-completion ()
+      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+	    '(flex))) ;; Configure flex
+    :hook
+    (lsp-completion-mode . my/lsp-mode-setup-completion))
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-buster)
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+#+end_src
+
+#+begin_src emacs-lisp :tangle off
+  (use-package lsp-mode
+    :custom
+    (lsp-completion-provider :none) ;; we use Corfu!
+    :init
+    (defun my/lsp-mode-setup-completion ()
+      (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+	    '(flex))) ;; Configure flex
+    :hook
+    (lsp-completion-mode . my/lsp-mode-setup-completion))
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-buster)
+  (advice-add 'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
+#+end_src
+
+** Configure lsp-ui, which is based on lsp-mode
+#+begin_src emacs-lisp :tangle off
+  (use-package lsp-ui
+    :init
+    (setq lsp-ui-sideline-show-hover t)
+    (setq lsp-ui-sideline-show-code-actions t)
+    (setq lsp-ui-sideline-show-diagnostics t)
+    ;;(setq lsp-ui-doc-position 'at-point)
+    :config
+    (lsp-ui-doc-enable 'ENABLE)
+    )
+#+end_src
+
+** eglot.el: Native IDE of Emacs
+#+begin_src emacs-lisp :tangle yes
+  ;;(elpaca (jsonrpc :version 1.0.23)) ;; function to return package's version...
+  (use-package eglot
+    :ensure t
+    ;;:elpaca (:source gnu)
+    :elpaca nil
+    :hook
+    (haskell-mode . eglot-ensure)
+    (haskell-mode . interactive-haskell-mode)
+    :init
+    ;; Option 1: Specify explicitly to use Orderless for Eglot
+    (setq completion-category-overrides '((eglot (styles orderless))
+					  (eglot-capf (styles orderless))))
+    ;; Enable cache busting, depending on if your server returns
+    ;; sufficiently many candidates in the first place.
+    (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+    )
+#+end_src
+
+** Emacs-lisp
+*** elisp-refs.el:
+#+begin_src emacs-lisp
+  (use-package elisp-refs
+    :ensure t
+    )
+#+end_src
+
+** Haskell
+*** haskell-mode.el:
+#+begin_src emacs-lisp :tangle yes
+  (use-package haskell-mode
+    :ensure t
+    :config
+    (eval-after-load 'haskell-mode
+      '(define-key haskell-mode-map [f8] 'haskell-navigate-imports))
+    )
+#+end_src
+
+*** lsp-haskell
+#+begin_src emacs-lisp :tangle yes
+  (use-package lsp-haskell
+    :ensure t
+    :config
+    ;; adding lsp-mode to the specific lanuage hook
+    ;;-automatially enables the corresponding server
+    ;;-for that lanuage source file, the following
+    ;;-hooks are unnecessary.
+    ;;(add-hook 'haskell-mode-hook #'lsp)
+    ;;(add-hook 'haskell-literate-mode-hook #'lsp)
+    )
+#+end_src
+
+*** hs-lint.el:
+#+begin_src emacs-lisp :tangle yes
+  (load "~/.emacs.d/hs-lint.el")
+  (defun my-haskell-mode-hook ()
+    (local-set-key "\C-cl" 'hs-lint))
+  (add-hook 'haskell-mode-hook 'my-haskell-mode-hook)
+#+end_src
+
+*** hindent.el:
+#+begin_src emacs-lisp :tangle yes
+  (use-package hindent
+    :ensure t
+    :config
+    (add-hook 'haskell-mode-hook #'hindent-mode)
+    )
+#+end_src
+
+*** hasktags
+#+begin_src emacs-lisp :tangle off
+  (let ((my-cabal-path (expand-file-name "~/.cabal/bin")))
+    (setenv "PATH" (concat my-cabal-path path-separator (getenv "PATH")))
+    (add-to-list 'exec-path my-cabal-path))
+  (custom-set-variables '(haskell-tags-on-save t))
+#+end_src
 
 * Emacs misc
 #+begin_src emacs-lisp
-   ;; Emacs config misc
-   (use-package emacs
-     :elpaca nil
-     :after (elpaca)
-     :init
-     ;;(setq scroll-margin 2)
-     ;;set a tab as to insert 4 spaces
-     (setq tab-stop-list (number-sequence 2 200 2))
-     ;;set to display a literal tab char as 4 spaces
-     (setq tab-width 2)
-     (setq mouse-wheel-progressive-speed nil)
-     (setq-default cursor-type '(bar . 5))
-     (setq-default cursor-in-non-selected-windows 'hollow)
-     (setq inhibit-startup-screen t)
-     (setq display-line-numbers-type 'relative)
+  ;; Emacs config misc
+  (use-package emacs
+    :elpaca nil
+    :after (elpaca)
+    :init
+    ;;(setq scroll-margin 2)
+    ;;set a tab as to insert 4 spaces
+    (setq tab-stop-list (number-sequence 2 200 2))
+    ;;set to display a literal tab char as 4 spaces
+    (setq tab-width 2)
+    (setq mouse-wheel-progressive-speed nil)
+    (setq-default cursor-type '(bar . 5))
+    (setq-default cursor-in-non-selected-windows 'hollow)
+    (setq inhibit-startup-screen t)
+    (setq display-line-numbers-type 'relative)
      ;;; Enable case-insensitivity for completion such as
      ;;;-Such as (find-file), (execute-extended-command)
-     (setq read-file-name-completion-ignore-case t
-	   read-buffer-completion-ignore-case t
-	   completion-ignore-case t)
+    (setq read-file-name-completion-ignore-case t
+	  read-buffer-completion-ignore-case t
+	  completion-ignore-case t)
      ;;; Enable case-insensitive completion specifically
      ;;;-for Eshell even after case-insensitive completion
      ;;;-is enabled, otherwise, case-insensitive only works
      ;;;-for files not directories
-     (setq eshell-glob-case-insensitive t)
-     (setq eshell-cmpl-ignore-case t)
-     :config
-     ;; Remember and restore the last cursor location of opened files
-     (save-place-mode 1)
-     ;; Remember recent opened files for recentf-open-files command
-     (recentf-mode 1)
-     (blink-cursor-mode 0)
-     (tool-bar-mode -1)
-     (global-display-line-numbers-mode 1)
+    (setq eshell-glob-case-insensitive t)
+    (setq eshell-cmpl-ignore-case t)
+    :config
+    ;; Remember and restore the last cursor location of opened files
+    (save-place-mode 1)
+    ;; Remember recent opened files for recentf-open-files command
+    (recentf-mode 1)
+    (blink-cursor-mode 0)
+    (tool-bar-mode -1)
+    (global-display-line-numbers-mode 1)
      ;;; Enable visual auto-fill globally, no acutal changes to files
-     (global-visual-line-mode 1)
-     (global-auto-revert-mode 1)
-     (global-unset-key (kbd "C-z"))
-
-  )
+    (global-visual-line-mode 1)
+    (global-auto-revert-mode 1)
+    (global-unset-key (kbd "C-z"))
+    (global-display-fill-column-indicator-mode 1)
+    )
 #+end_src
 
-Copy-paste auto-generated configs by UI
+** Copy-paste auto-generated configs by UI
 #+begin_src emacs-lisp :tangle yes
   (custom-set-variables
    ;; custom-set-variables was added by Custom.
@@ -859,8 +1147,10 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
 : ;;(add-hook 'buffer-list-update-hook 'change-cursor-color-by-edition)
 : (add-hook 'window-state-change-hook 'change-cursor-color-by-edition)
 
-** Switch to  vertical/horizontal layout for existing windows
-#+begin_src emacs-lisp :tangle yes
+** Switch to vertical/horizontal layout for existing windows
+Using ~(add-hook 'window-state-change-hook 'balance-window)~ instead of ~(balance-window)~ for both ~split-and-follow-vertically~ and ~split-and-follow-horizontally~ , to resue the code. It also balances the rest windows when a window exits  
+
+#+begin_src emacs-lisp
   ;; Self-defined functions
   ;;; Auto-switch to the newly opened window
   (defun split-and-follow-horizontally ()
@@ -875,10 +1165,11 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
     (balance-windows)
     (other-window 1))
   (global-set-key (kbd "C-x 3") 'split-and-follow-vertically)
+  ;;(add-hook 'window-state-change-hook 'balance-window)
 #+end_src
 
 ** Toggle read-only-mode with cursor color changed
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle off
   ;;; Define after-load-theme-hook
   (defvar after-load-theme-hook nil
     "Hook run after a color theme is loaded using `load-theme'.")
@@ -903,11 +1194,13 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
   (defun toggle-edition ()
     (interactive)
     (call-interactively `read-only-mode)
+    ;;(if buffer-read-only
+    ;;	(progn
+    ;;	  (god-mode-all 1)
+    ;;	  (save-buffer))
+    ;;  (god-mode-all -1))
     (if buffer-read-only
-	(progn
-	  (god-mode-all 1)
-	  (save-buffer))
-      (god-mode-all -1)))
+	(save-buffer)))
   ;;(add-hook 'text-mode-hook 'read-only-mode)
   ;;(add-hook 'prog-mode-hook 'read-only-mode)
   ;; disable initial scrathch buffer massage
@@ -916,7 +1209,57 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
   ;;-at startup
   (setq initial-scratch-message nil)
   ;;(add-hook 'org-mode-hook 'read-only-mode)
-  (add-hook 'post-command-hook 'change-cursor-color-by-edition)
+  (add-hook 'find-file-hook 'read-only-mode)
+  ;;(add-hook 'buffer-list-update-hook 'read-only-mode)
+  ;;(add-hook 'post-command-hook 'change-cursor-color-by-edition)
+  (global-set-key (kbd "C-`") 'toggle-edition)
+#+end_src
+
+Complete version:
+#+begin_src emacs-lisp
+  ;;; Define after-load-theme-hook
+  (defvar after-load-theme-hook nil
+    "Hook run after a color theme is loaded using `load-theme'.")
+  (defadvice load-theme (after run-after-load-theme-hook activate)
+    "Run `after-load-theme-hook'."
+    (run-hooks 'after-load-theme-hook))
+
+    ;;; Toggle read-only-mode & cursor color changed
+  (defvar current-cursor-color nil)
+  (defun get-current-cursor-color ()
+    "Return current theme's cursor color in current frame"
+    (interactive)
+    (face-attribute 'cursor :background nil 'custom-enabled-themes))
+  (add-hook 'after-load-theme-hook (lambda ()
+				     (setq current-cursor-color
+					   (get-current-cursor-color))))
+  (defun change-cursor-color-by-edition ()
+    (if buffer-read-only
+	(set-cursor-color "#d54444")
+      (set-cursor-color "#4084d3")))
+  (defun toggle-edition ()
+    (interactive)
+    (call-interactively `read-only-mode)
+    (if buffer-read-only
+	(save-buffer)))
+  ;; disable initial scrathch buffer massage
+  ;;-otherwise, emacs halts to fnishe when run
+  ;;-as a daemoon while read-mode-only is enabled
+  ;;-at startup
+  (setq initial-scratch-message nil)
+  (add-hook 'find-file-hook 'read-only-mode)
+  (add-hook 'find-file-hook 'change-cursor-color-by-edition)
+  ;; The LOCAL must set to non-til, otherwise opening files with
+  ;; treemacs will make the cursor color double-switch back to the color
+  ;; which is set to indiate in non-read-only-mode.  It needs to combine
+  ;; in use with 'window-state-change-hook' for
+  ;; 'change-cursor-color-by-edition', otherwise, switching between
+  ;; windows won't work for cursor color change
+  (add-hook 'buffer-list-update-hook 'change-cursor-color-by-edition nil t)
+  (add-hook 'window-state-change-hook 'change-cursor-color-by-edition)
+  (add-hook 'read-only-mode-hook 'change-cursor-color-by-edition)
+  (add-hook 'after-load-theme-hook 'change-cursor-color-by-edition)
+  ;;(add-hook 'post-command-hook 'change-cursor-color-by-edition)
   (global-set-key (kbd "C-`") 'toggle-edition)
 #+end_src
 
@@ -925,22 +1268,22 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
   ;;; Implement to show current heading
   ;;;-in window's header line or modeline
   (defun ndk/heading-title ()
-     "Get the heading title."
-     (save-excursion
-       (if (not (org-at-heading-p))
-	 (org-previous-visible-heading 1))
-       (org-element-property :title (org-element-at-point))))
+    "Get the heading title."
+    (save-excursion
+      (if (not (org-at-heading-p))
+	  (org-previous-visible-heading 1))
+      (org-element-property :title (org-element-at-point))))
   (defun ndk/org-breadcrumbs ()
-     "Get the chain of headings from the top level down
+    "Get the chain of headings from the top level down
       to the current heading."
-     (let ((breadcrumbs (org-format-outline-path
-			   (org-get-outline-path)
-			   (1- (frame-width))
-			   nil "->"))
-	   (title (ndk/heading-title)))
-       (if (string-empty-p breadcrumbs)
-	   title
-	 (format "%s->%s" breadcrumbs title))))
+    (let ((breadcrumbs (org-format-outline-path
+			(org-get-outline-path)
+			(1- (frame-width))
+			nil "->"))
+	  (title (ndk/heading-title)))
+      (if (string-empty-p breadcrumbs)
+	  title
+	(format "%s->%s" breadcrumbs title))))
   (defun ndk/set-header-line-format()
     ;;(setq header-line-format '(:eval (ndk/org-breadcrumbs)))
     (setq header-line-format '(:eval (format "  %s" (ndk/org-breadcrumbs))))
@@ -951,49 +1294,49 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
 ** Prevent theme overlaping when loading a theme after previous one
 #+begin_src emacs-lisp :tangle yes
   (defadvice load-theme (before theme-dont-propagate activate)
-   (mapc #'disable-theme custom-enabled-themes))
+    (mapc #'disable-theme custom-enabled-themes))
 #+end_src
 
 ** Better navigation in org-mode
 #+begin_src emacs-lisp
   (defun forward-and-preview ()
-      "Go to same level next heading and show preview in dedicated buffer"
-      (interactive)
-      (hide-subtree)
-      (org-speed-move-safe (quote outline-next-visible-heading))
-      (show-children)
-      (org-tree-to-indirect-buffer)
-      )
+    "Go to same level next heading and show preview in dedicated buffer"
+    (interactive)
+    (hide-subtree)
+    (org-speed-move-safe (quote outline-next-visible-heading))
+    (show-children)
+    (org-tree-to-indirect-buffer)
+    )
   (defun back-and-preview ()
-      "Go to same level previous heading and show preview in dedicated buffer"
-      (interactive)
-      (hide-subtree)
-      (org-speed-move-safe (quote outline-previous-visible-heading))
-      (show-children)
-      (org-tree-to-indirect-buffer)
-      )
+    "Go to same level previous heading and show preview in dedicated buffer"
+    (interactive)
+    (hide-subtree)
+    (org-speed-move-safe (quote outline-previous-visible-heading))
+    (show-children)
+    (org-tree-to-indirect-buffer)
+    )
   (defun up-back-and-preview ()
-      "Go to previous level heading and show preview in dedicated buffer"
-      (interactive)
-      (org-speed-move-safe (quote outline-up-heading))
-      (org-tree-to-indirect-buffer)
-      (hide-subtree)
-      )
+    "Go to previous level heading and show preview in dedicated buffer"
+    (interactive)
+    (org-speed-move-safe (quote outline-up-heading))
+    (org-tree-to-indirect-buffer)
+    (hide-subtree)
+    )
   (defun up-forward-and-preview ()
-      "Go to previous level next heading and show preview in dedicated buffer"
-      (interactive)
-      (org-speed-move-safe (quote outline-up-heading))
-      (hide-subtree)
-      (org-speed-move-safe (quote outline-next-visible-heading))
-      (org-tree-to-indirect-buffer)
-      )
+    "Go to previous level next heading and show preview in dedicated buffer"
+    (interactive)
+    (org-speed-move-safe (quote outline-up-heading))
+    (hide-subtree)
+    (org-speed-move-safe (quote outline-next-visible-heading))
+    (org-tree-to-indirect-buffer)
+    )
   (defun inside-and-preview ()
-      "Go to next level heading and show preview in dedicated buffer"
-      (interactive)
-      (org-speed-move-safe (quote outline-next-visible-heading))
-      (show-children)
-      (org-tree-to-indirect-buffer)
-      )
+    "Go to next level heading and show preview in dedicated buffer"
+    (interactive)
+    (org-speed-move-safe (quote outline-next-visible-heading))
+    (show-children)
+    (org-tree-to-indirect-buffer)
+    )
   ;;(add-to-list 'org-speed-commands-user '("l" inside-and-preview))
   ;;(add-to-list 'org-speed-commands-user '("j" forward-and-preview))
   ;;(add-to-list 'org-speed-commands-user '("k" back-and-preview))
@@ -1004,4 +1347,61 @@ Instead, Use (add-hook 'window-state-change-hook 'change-cursor-color-by-edition
   (add-to-list 'org-speed-commands '("k" back-and-preview))
   (add-to-list 'org-speed-commands '("J" up-forward-and-preview))
   (add-to-list 'org-speed-commands '("K" up-back-and-preview))
+#+end_src
+
+** Implement to show subentry count for each heading 
+#+begin_src emacs-lisp
+  (defcustom org-subentry-count-at-start nil
+    "Show the subentry count before the title, not after."
+    :group 'org-subenty-count
+    :type 'boolean)
+
+  (defvar org-subentry-count-in-headings-p nil
+    "t to enable org-subentry-count-in-headings
+       nil to disable org-subentry-count-in-headings")
+
+  (defun org-subentry-count-in-headings ()
+    (org-map-entries
+     (lambda ()
+       (when (looking-at org-complex-heading-regexp)
+	 (let* ((group (if org-subentry-count-at-start 1 0))
+		(beg (match-beginning group))
+		(end (match-end group))
+		(level (length (match-string 1))) ; stars in headline
+		(subheading-count (format "%s" (1- (length (org-map-entries nil nil 'tree)))))
+		(ov (car (seq-filter
+			  ;; search for subentry-count overlay
+			  (lambda (o)
+			    (eq (overlay-get o 'type) 'subentry-count)) 
+			  (overlays-in (line-beginning-position)
+				       (line-end-position))))))
+	   (if ov ; only create overlay if not exists yet
+	       (move-overlay ov beg end)
+	     (setq ov (make-overlay beg end))
+	     (overlay-put ov 'type 'subentry-count) ; add a type, for easy filtering
+	     (overlay-put ov 'evaporate t))
+	   ;; only add/remove 'after-string' prop in toggle
+	   (if org-subentry-count-in-headings-p
+	       (overlay-put ov 'after-string (propertize (format " [%s]" subheading-count)
+							 'face (intern-soft (format "org-level-%d" level))))
+	     (overlay-put ov 'after-string nil)))))))
+
+  (defun toggle-org-subentry-count-in-headings ()
+    (interactive)
+    (if org-subentry-count-in-headings-p
+	(setq org-subentry-count-in-headings-p nil)
+      (setq org-subentry-count-in-headings-p t))
+    (org-subentry-count-in-headings))
+
+  (defun toggle-org-subentry-position ()
+    (interactive)
+    (setq org-subentry-count-at-start (not org-subentry-count-at-start))
+    (setq org-subentry-count-in-headings-p t)
+    (org-subentry-count-in-headings))
+
+  (add-hook 'org-mode-hook (lambda ()
+			     (setq org-subentry-count-in-headings-p t)
+			     (setq org-subentry-count-at-start t)
+			     (org-subentry-count-in-headings)
+			     (add-hook 'after-save-hook 'org-subentry-count-in-headings)))
 #+end_src
