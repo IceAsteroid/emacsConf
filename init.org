@@ -298,6 +298,7 @@ Define single command to switch a specific theme
     (popwin-mode 1)
     :config
     (push '("*hs-lint*" :stick t) popwin:special-display-config)
+    (push '("*Help*" :stick t) popwin:special-display-config)
     (push '("*EGLOT.*" :regexp t) popwin:special-display-config)
     (push '("*xref*" :stick t) popwin:special-display-config)
     (push '("*Buffer List*" :stick t) popwin:special-display-config)
@@ -307,10 +308,10 @@ Define single command to switch a specific theme
 
 * olivetti.el: Anotehr package to center content
 #+begin_src emacs-lisp :tangle off
-(use-package olivetti
-  :ensure t
-  :init
-  (olivetti-mode 1))
+  (use-package olivetti
+    :ensure t
+    :init
+    (olivetti-mode 1))
 #+end_src
 
 * all-the-icons.el
@@ -404,6 +405,18 @@ Define single command to switch a specific theme
     ;; Self-added tweaks
     (treemacs-indent-guide-mode t) ;;enable indent indicator
     (treemacs-load-all-the-icons-with-workaround-font "Hermit")
+    ;; Unset sensitive keybindings to prevent executing dangerous
+    ;; actions by accidents.
+    (add-hook 'treemacs-mode-hook
+	      (lambda ()
+		(local-unset-key (kbd "d")) ;;unbind treemacs-delete-file
+		(local-unset-key (kbd "m")) ;;unbind treemacs-move-file
+		(local-unset-key (kbd "R")) ;;unbind treemacs-rename-file
+		(local-unset-key (kbd "C-c C-p r")) ;;unbind treemacs-rename-project
+		(local-unset-key (kbd "C-c C-w r")) ;;unbind treemacs-rename-workspace
+		(local-unset-key (kbd "C-c C-w d")) ;;unbind treemacs-remove-workspace
+		(local-unset-key (kbd "C-c C-p d")) ;;unbind treemacs-remove-project-from-workspace
+		))
     :bind
     (:map global-map
 	  ("M-0"       . treemacs-select-window)
@@ -683,6 +696,8 @@ Define single command to switch a specific theme
   ;; consult.el
   (use-package consult
     :ensure t
+    :hook
+    (org-mode . (lambda () (local-set-key (kbd "C-c C-g") 'consult-org-heading)))
     :bind
     ("C-x f" . consult-recent-file)
     ("M-g g" . consult-goto-line)
@@ -793,6 +808,19 @@ Define single command to switch a specific theme
     (setq mark-active nil))
   (add-hook 'buffer-list-update-hook 'add-line-padding)
 #+end_src
+
+*  Testing org-headings
+** Heading 2
+*** Heading 3
+**** Heading 4
+***** Heading 5
+****** Heading 6
+******* Heading 7
+******** Heading 8
+********* Heading 9
+********** Heading 10
+*********** Heading 11
+************ Heading 12
 
 * Org-mode related configs
 ** org-mode
@@ -1217,50 +1245,57 @@ Using ~(add-hook 'window-state-change-hook 'balance-window)~ instead of ~(balanc
 
 Complete version:
 #+begin_src emacs-lisp
-  ;;; Define after-load-theme-hook
-  (defvar after-load-theme-hook nil
-    "Hook run after a color theme is loaded using `load-theme'.")
-  (defadvice load-theme (after run-after-load-theme-hook activate)
-    "Run `after-load-theme-hook'."
-    (run-hooks 'after-load-theme-hook))
+    ;;; Define after-load-theme-hook
+    (defvar after-load-theme-hook nil
+      "Hook run after a color theme is loaded using `load-theme'.")
+    (defadvice load-theme (after run-after-load-theme-hook activate)
+      "Run `after-load-theme-hook'."
+      (run-hooks 'after-load-theme-hook))
+    (defadvice resize-window (after run-after-resize-window-hook activate)
+      "Run `after-resize-window-hook'."
+      (run-hooks 'after-resize-window-hook))
 
-    ;;; Toggle read-only-mode & cursor color changed
-  (defvar current-cursor-color nil)
-  (defun get-current-cursor-color ()
-    "Return current theme's cursor color in current frame"
-    (interactive)
-    (face-attribute 'cursor :background nil 'custom-enabled-themes))
-  (add-hook 'after-load-theme-hook (lambda ()
-				     (setq current-cursor-color
-					   (get-current-cursor-color))))
-  (defun change-cursor-color-by-edition ()
-    (if buffer-read-only
-	(set-cursor-color "#d54444")
-      (set-cursor-color "#4084d3")))
-  (defun toggle-edition ()
-    (interactive)
-    (call-interactively `read-only-mode)
-    (if buffer-read-only
-	(save-buffer)))
-  ;; disable initial scrathch buffer massage
-  ;;-otherwise, emacs halts to fnishe when run
-  ;;-as a daemoon while read-mode-only is enabled
-  ;;-at startup
-  (setq initial-scratch-message nil)
-  (add-hook 'find-file-hook 'read-only-mode)
-  (add-hook 'find-file-hook 'change-cursor-color-by-edition)
-  ;; The LOCAL must set to non-til, otherwise opening files with
-  ;; treemacs will make the cursor color double-switch back to the color
-  ;; which is set to indiate in non-read-only-mode.  It needs to combine
-  ;; in use with 'window-state-change-hook' for
-  ;; 'change-cursor-color-by-edition', otherwise, switching between
-  ;; windows won't work for cursor color change
-  (add-hook 'buffer-list-update-hook 'change-cursor-color-by-edition nil t)
-  (add-hook 'window-state-change-hook 'change-cursor-color-by-edition)
-  (add-hook 'read-only-mode-hook 'change-cursor-color-by-edition)
-  (add-hook 'after-load-theme-hook 'change-cursor-color-by-edition)
-  ;;(add-hook 'post-command-hook 'change-cursor-color-by-edition)
-  (global-set-key (kbd "C-`") 'toggle-edition)
+      ;;; Toggle read-only-mode & cursor color changed
+    (defvar current-cursor-color nil)
+    (defun get-current-cursor-color ()
+      "Return current theme's cursor color in current frame"
+      (interactive)
+      (face-attribute 'cursor :background nil 'custom-enabled-themes))
+    (add-hook 'after-load-theme-hook (lambda ()
+				       (setq current-cursor-color
+					     (get-current-cursor-color))))
+    (defun change-cursor-color-by-edition ()
+      "change color by edition"
+      (if buffer-read-only
+	  (set-cursor-color "#d54444")
+	(set-cursor-color "#4084d3")))
+    (defun toggle-edition ()
+      (interactive)
+      (call-interactively `read-only-mode)
+      (if buffer-read-only
+	  (save-buffer)))
+    ;; disable initial scrathch buffer massage
+    ;;-otherwise, emacs halts to fnishe when run
+    ;;-as a daemoon while read-mode-only is enabled
+    ;;-at startup
+    (setq initial-scratch-message nil)
+    (add-hook 'find-file-hook 'read-only-mode)
+    (add-hook 'find-file-hook 'change-cursor-color-by-edition)
+    ;; The LOCAL must set to non-til, otherwise opening files with
+    ;; treemacs will make the cursor color double-switch back to the color
+    ;; which is set to indiate in non-read-only-mode.  It needs to combine
+    ;; in use with 'window-state-change-hook' for
+    ;; 'change-cursor-color-by-edition', otherwise, switching between
+    ;; windows won't work for cursor color change
+    (add-hook 'buffer-list-update-hook 'change-cursor-color-by-edition nil t)
+    (add-hook 'window-state-change-hook 'change-cursor-color-by-edition)
+    (add-hook 'read-only-mode-hook 'change-cursor-color-by-edition)
+    (add-hook 'after-load-theme-hook 'change-cursor-color-by-edition)
+    (add-hook 'org-side-tree-mode-hook
+	      (lambda () (add-hook 'buffer-list-update-hook 'change-cursor-color-by-edition)))
+    ;;(add-hook 'after-resize-window-hook 'change-cursor-color-by-edition)
+    ;;(add-hook 'post-command-hook 'change-cursor-color-by-edition)
+    (global-set-key (kbd "C-`") 'toggle-edition)
 #+end_src
 
 ** Show current heading with its parent in window's header line
@@ -1349,7 +1384,10 @@ Complete version:
   (add-to-list 'org-speed-commands '("K" up-back-and-preview))
 #+end_src
 
-** Implement to show subentry count for each heading 
+** Implement to show subentry count for each heading
+This implementation was created as barely a scratch by me, but was
+improved to perfection by @dalanicolai on StackExchange. [[https://emacs.stackexchange.com/questions/79785/how-to-display-sub-heading-count-somewhere-in-a-heading-in-org-mode/79829?noredirect=1#comment133905_79829][Link]]
+
 #+begin_src emacs-lisp
   (defcustom org-subentry-count-at-start nil
     "Show the subentry count before the title, not after."
